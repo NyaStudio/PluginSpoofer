@@ -3,6 +3,7 @@ package cn.nekopixel.pluginspoofer.utils;
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
@@ -10,6 +11,7 @@ import org.bukkit.entity.Player;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.logging.Level;
 
 public class PluginListSender {
     private final ConfigManager config;
@@ -27,6 +29,11 @@ public class PluginListSender {
     public void sendCustomPluginList(Player player) {
         int totalPlugins = getTotalPluginCount();
         boolean hoverEnabled = config.isHoverTooltipsEnabled();
+        
+        if (config.isDebugEnabled()) {
+            player.sendMessage("§7[Debug] Hover tooltips enabled: " + hoverEnabled);
+            player.sendMessage("§7[Debug] Adventure instance: " + (adventure != null ? "OK" : "NULL"));
+        }
 
         Component infoIcon = hoverEnabled 
             ? HoverTextBuilder.createInfoIcon()
@@ -34,7 +41,22 @@ public class PluginListSender {
             
         Component title = infoIcon
             .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE));
-        adventure.player(player).sendMessage(title);
+        
+        try {
+            adventure.player(player).sendMessage(title);
+            
+            if (config.isDebugEnabled() && hoverEnabled) {
+                Component testHover = Component.text("§7[Debug] Hover test: ")
+                    .append(Component.text("Hover me!", NamedTextColor.GREEN)
+                        .hoverEvent(HoverEvent.showText(Component.text("If you see this, hover is working!", NamedTextColor.YELLOW))));
+                adventure.player(player).sendMessage(testHover);
+            }
+        } catch (Exception e) {
+            player.sendMessage("§c[Error] Failed to send message with Adventure API: " + e.getMessage());
+            if (config.isDebugEnabled()) {
+                e.printStackTrace();
+            }
+        }
         
         sendBukkitPlugins(player);
         sendPaperPlugins(player);
@@ -76,47 +98,59 @@ public class PluginListSender {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
         boolean hoverEnabled = config.isHoverTooltipsEnabled();
         
-        List<String> sortedEnabled = new ArrayList<>(enabled);
-        Collections.sort(sortedEnabled, String.CASE_INSENSITIVE_ORDER);
+        List<PluginEntry> allPlugins = new ArrayList<>();
+        for (String plugin : enabled) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.ENABLED));
+        }
+        for (String plugin : legacy) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.LEGACY));
+        }
+        for (String plugin : disabled) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.DISABLED));
+        }
         
-        List<String> sortedLegacy = new ArrayList<>(legacy);
-        Collections.sort(sortedLegacy, String.CASE_INSENSITIVE_ORDER);
-        
-        List<String> sortedDisabled = new ArrayList<>(disabled);
-        Collections.sort(sortedDisabled, String.CASE_INSENSITIVE_ORDER);
-        
+        allPlugins.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
         boolean first = true;
         
-        for (String plugin : sortedEnabled) {
+        for (PluginEntry entry : allPlugins) {
             if (!first) {
                 lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
             }
-            lineComponent = lineComponent.append(Component.text(plugin, NamedTextColor.GREEN));
-            first = false;
-        }
-        
-        for (String plugin : sortedLegacy) {
-            if (!first) {
-                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
+            
+            switch (entry.type) {
+                case ENABLED:
+                    lineComponent = lineComponent.append(Component.text(entry.name, NamedTextColor.GREEN));
+                    break;
+                case LEGACY:
+                    Component legacyMarker = hoverEnabled
+                        ? HoverTextBuilder.createLegacyMarker(LEGACY_COLOR)
+                        : Component.text("*", LEGACY_COLOR);
+                    lineComponent = lineComponent.append(legacyMarker)
+                                                 .append(Component.text(entry.name, NamedTextColor.GREEN));
+                    break;
+                case DISABLED:
+                    lineComponent = lineComponent.append(Component.text(entry.name, NamedTextColor.RED));
+                    break;
             }
-            Component legacyMarker = hoverEnabled
-                ? HoverTextBuilder.createLegacyMarker(LEGACY_COLOR)
-                : Component.text("*", LEGACY_COLOR);
-                
-            lineComponent = lineComponent.append(legacyMarker)
-                                         .append(Component.text(plugin, NamedTextColor.GREEN));
-            first = false;
-        }
-        
-        for (String plugin : sortedDisabled) {
-            if (!first) {
-                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
-            }
-            lineComponent = lineComponent.append(Component.text(plugin, NamedTextColor.RED));
+            
             first = false;
         }
         
         return lineComponent;
+    }
+    
+    private static class PluginEntry {
+        final String name;
+        final PluginType type;
+        
+        PluginEntry(String name, PluginType type) {
+            this.name = name;
+            this.type = type;
+        }
+    }
+    
+    private enum PluginType {
+        ENABLED, LEGACY, DISABLED
     }
     
     private int getTotalPluginCount() {

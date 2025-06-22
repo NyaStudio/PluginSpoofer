@@ -15,16 +15,28 @@ blocked-commands:
 plugins:
   enabled: true
   paper:
-    - "Geyser-Spigot"
-    - "ViaVersion"
-    - "ProtocolLib"
+    enabled:
+      - "Geyser-Spigot"
+      - "ViaVersion"
+      - "ProtocolLib"
+    legacy:
+      - "ViaBackwards"
+      - "OldCombatMechanics"
+    disabled:
+      - "SkinsRestorer"
+      - "AuthMe"
   bukkit:
-    - "EssentialsX"
-    - "WorldEdit"
-    - "LuckPerms"
-    - "Vault"
-    - "PlaceholderAPI"
-    - "CoreProtect"
-    - "WorldGuard"
+    enabled:
+      - "EssentialsX"
+      - "WorldEdit"
+      - "LuckPerms"
+      - "Vault"
+      - "PlaceholderAPI"
+    legacy:
+      - "PermissionsEx"
+      - "GroupManager"
+    disabled:
+      - "CoreProtect"
+      - "WorldGuard"
 
 unknown-msg: "Unknown command. Type \"/help\" for help."

@@ -3,8 +3,8 @@ package cn.nekopixel.pluginspoofer.utils;
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
@@ -13,34 +13,97 @@ public class PluginListSender {
     private final ConfigManager config;
     private final BukkitAudiences adventure;
     
+    private static final TextColor BUKKIT_COLOR = TextColor.fromHexString("#ea7f06");
+    private static final TextColor INFO_COLOR = TextColor.fromHexString("#339dd7");
+    private static final TextColor LEGACY_COLOR = BUKKIT_COLOR;
+    
     public PluginListSender(ConfigManager config, BukkitAudiences adventure) {
         this.config = config;
         this.adventure = adventure;
     }
     
     public void sendCustomPluginList(Player player) {
-        List<String> paperPlugins = config.getPaperPlugins();
-        List<String> bukkitPlugins = config.getBukkitPlugins();
-        int totalPlugins = paperPlugins.size() + bukkitPlugins.size();
-        
-        player.sendMessage(ChatColor.DARK_AQUA + "ℹ" + ChatColor.WHITE + " Server Plugins (" + totalPlugins + "):");
-        
-        if (!bukkitPlugins.isEmpty()) {
-            Component bukkitTitle = Component.text("Bukkit Plugins:")
-                .color(TextColor.fromHexString("#ea7f06"));
-            adventure.player(player).sendMessage(bukkitTitle);
-            
-            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, bukkitPlugins);
-            player.sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
-        }
-        
-        if (!paperPlugins.isEmpty()) {
-            Component paperTitle = Component.text("Paper Plugins:")
-                    .color(TextColor.fromHexString("#339dd7"));
-            adventure.player(player).sendMessage(paperTitle);
+        int totalPlugins = getTotalPluginCount();
 
-            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, paperPlugins);
-            player.sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
+        Component title = Component.text("ℹ", INFO_COLOR)
+            .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE));
+        adventure.player(player).sendMessage(title);
+        
+        sendBukkitPlugins(player);
+        sendPaperPlugins(player);
+    }
+    
+    private void sendBukkitPlugins(Player player) {
+        List<String> enabled = config.getBukkitEnabledPlugins();
+        List<String> legacy = config.getBukkitLegacyPlugins();
+        List<String> disabled = config.getBukkitDisabledPlugins();
+        
+        if (enabled.isEmpty() && legacy.isEmpty() && disabled.isEmpty()) {
+            return;
         }
+        
+        Component bukkitTitle = Component.text("Bukkit Plugins:", BUKKIT_COLOR);
+        adventure.player(player).sendMessage(bukkitTitle);
+        
+        Component pluginLine = buildPluginLine(enabled, legacy, disabled);
+        adventure.player(player).sendMessage(pluginLine);
+    }
+    
+    private void sendPaperPlugins(Player player) {
+        List<String> enabled = config.getPaperEnabledPlugins();
+        List<String> legacy = config.getPaperLegacyPlugins();
+        List<String> disabled = config.getPaperDisabledPlugins();
+        
+        if (enabled.isEmpty() && legacy.isEmpty() && disabled.isEmpty()) {
+            return;
+        }
+        
+        Component paperTitle = Component.text("Paper Plugins:", NamedTextColor.DARK_AQUA);
+        adventure.player(player).sendMessage(paperTitle);
+        
+        Component pluginLine = buildPluginLine(enabled, legacy, disabled);
+        adventure.player(player).sendMessage(pluginLine);
+    }
+    
+    private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
+        Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
+        
+        boolean first = true;
+        
+        for (String plugin : enabled) {
+            if (!first) {
+                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
+            }
+            lineComponent = lineComponent.append(Component.text(plugin, NamedTextColor.GREEN));
+            first = false;
+        }
+        
+        for (String plugin : legacy) {
+            if (!first) {
+                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
+            }
+            lineComponent = lineComponent.append(Component.text("*", LEGACY_COLOR))
+                                         .append(Component.text(plugin, NamedTextColor.GREEN));
+            first = false;
+        }
+        
+        for (String plugin : disabled) {
+            if (!first) {
+                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
+            }
+            lineComponent = lineComponent.append(Component.text(plugin, NamedTextColor.RED));
+            first = false;
+        }
+        
+        return lineComponent;
+    }
+    
+    private int getTotalPluginCount() {
+        return config.getBukkitEnabledPlugins().size() +
+               config.getBukkitLegacyPlugins().size() +
+               config.getBukkitDisabledPlugins().size() +
+               config.getPaperEnabledPlugins().size() +
+               config.getPaperLegacyPlugins().size() +
+               config.getPaperDisabledPlugins().size();
     }
 } 

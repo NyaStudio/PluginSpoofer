@@ -40,12 +40,38 @@ public class ConfigManager {
         return config.getBoolean("plugins.enabled", true);
     }
     
-    public List<String> getPaperPlugins() {
-        return config.getStringList("plugins.paper");
+    public List<String> getPaperEnabledPlugins() {
+        return config.getStringList("plugins.paper.enabled");
     }
     
+    public List<String> getPaperLegacyPlugins() {
+        return config.getStringList("plugins.paper.legacy");
+    }
+    
+    public List<String> getPaperDisabledPlugins() {
+        return config.getStringList("plugins.paper.disabled");
+    }
+    
+    public List<String> getBukkitEnabledPlugins() {
+        return config.getStringList("plugins.bukkit.enabled");
+    }
+    
+    public List<String> getBukkitLegacyPlugins() {
+        return config.getStringList("plugins.bukkit.legacy");
+    }
+    
+    public List<String> getBukkitDisabledPlugins() {
+        return config.getStringList("plugins.bukkit.disabled");
+    }
+    
+    @Deprecated
+    public List<String> getPaperPlugins() {
+        return getPaperEnabledPlugins();
+    }
+    
+    @Deprecated
     public List<String> getBukkitPlugins() {
-        return config.getStringList("plugins.bukkit");
+        return getBukkitEnabledPlugins();
     }
     
     public String getUnknownCommandMessage() {

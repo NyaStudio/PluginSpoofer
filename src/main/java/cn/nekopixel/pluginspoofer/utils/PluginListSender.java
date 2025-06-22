@@ -8,6 +8,8 @@ import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class PluginListSender {
     private final ConfigManager config;
@@ -68,9 +70,18 @@ public class PluginListSender {
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
         
+        List<String> sortedEnabled = new ArrayList<>(enabled);
+        Collections.sort(sortedEnabled, String.CASE_INSENSITIVE_ORDER);
+        
+        List<String> sortedLegacy = new ArrayList<>(legacy);
+        Collections.sort(sortedLegacy, String.CASE_INSENSITIVE_ORDER);
+        
+        List<String> sortedDisabled = new ArrayList<>(disabled);
+        Collections.sort(sortedDisabled, String.CASE_INSENSITIVE_ORDER);
+        
         boolean first = true;
         
-        for (String plugin : enabled) {
+        for (String plugin : sortedEnabled) {
             if (!first) {
                 lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
             }
@@ -78,7 +89,7 @@ public class PluginListSender {
             first = false;
         }
         
-        for (String plugin : legacy) {
+        for (String plugin : sortedLegacy) {
             if (!first) {
                 lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
             }
@@ -87,7 +98,7 @@ public class PluginListSender {
             first = false;
         }
         
-        for (String plugin : disabled) {
+        for (String plugin : sortedDisabled) {
             if (!first) {
                 lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
             }

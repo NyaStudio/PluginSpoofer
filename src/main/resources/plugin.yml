@@ -3,3 +3,14 @@ version: 1.0.0-bukkit
 main: cn.nekopixel.pluginspoofer.Main
 api-version: 1.13
 depend: [packetevents]
+
+commands:
+  pluginspoofer:
+    description: "PluginSpoofer 主命令"
+    aliases: [ps]
+    permission: pluginspoofer.admin
+
+permissions:
+  pluginspoofer.admin:
+    description: "允许使用 PluginSpoofer 管理命令"
+    default: op

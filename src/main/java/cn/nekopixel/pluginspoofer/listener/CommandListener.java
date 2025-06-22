@@ -1,6 +1,7 @@
 package cn.nekopixel.pluginspoofer.listener;
 
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
+import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -9,6 +10,7 @@ import org.bukkit.event.player.PlayerCommandSendEvent;
 import org.bukkit.event.server.TabCompleteEvent;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class CommandListener implements Listener {
     private final ConfigManager config;
@@ -26,7 +28,38 @@ public class CommandListener implements Listener {
             if (baseCommand.equals("/" + blocked.toLowerCase()) || 
                 baseCommand.equals(blocked.toLowerCase())) {
                 event.setCancelled(true);
+                
+                String cmdName = blocked.toLowerCase();
+                if ((cmdName.equals("pl") || cmdName.equals("plugins") || 
+                     cmdName.equals("bukkit:pl") || cmdName.equals("bukkit:plugins")) 
+                     && config.isCustomPluginListEnabled()) {
+                    sendCustomPluginList(event);
+                } else {
+                    event.getPlayer().sendMessage(config.getUnknownCommandMessage());
+                }
                 return;
+            }
+        }
+    }
+    
+    private void sendCustomPluginList(PlayerCommandPreprocessEvent event) {
+        List<String> paperPlugins = config.getPaperPlugins();
+        List<String> bukkitPlugins = config.getBukkitPlugins();
+        int totalPlugins = paperPlugins.size() + bukkitPlugins.size();
+        
+        event.getPlayer().sendMessage(ChatColor.DARK_AQUA + "ℹ" + ChatColor.WHITE + " Server Plugins (" + totalPlugins + "):");
+        
+        if (!bukkitPlugins.isEmpty()) {
+            event.getPlayer().sendMessage(ChatColor.GOLD + "Bukkit Plugins:");
+            for (String plugin : bukkitPlugins) {
+                event.getPlayer().sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + plugin);
+            }
+        }
+        
+        if (!paperPlugins.isEmpty()) {
+            event.getPlayer().sendMessage(ChatColor.DARK_AQUA + "Paper Plugins:");
+            for (String plugin : paperPlugins) {
+                event.getPlayer().sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + plugin);
             }
         }
     }

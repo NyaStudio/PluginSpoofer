@@ -1,5 +1,6 @@
 package cn.nekopixel.pluginspoofer;
 
+import cn.nekopixel.pluginspoofer.command.CommandHandler;
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import cn.nekopixel.pluginspoofer.listener.CommandListener;
 import cn.nekopixel.pluginspoofer.debug.DebugPacketListener;
@@ -23,6 +24,10 @@ public class Main extends JavaPlugin {
         PacketEvents.getAPI().init();
         getServer().getPluginManager().registerEvents(new CommandListener(configManager), this);
         PacketEvents.getAPI().getEventManager().registerListener(new DebugPacketListener(this, configManager));
+        
+        CommandHandler commandHandler = new CommandHandler(this);
+        getCommand("pluginspoofer").setExecutor(commandHandler);
+        getCommand("pluginspoofer").setTabCompleter(commandHandler);
         
         getLogger().info("加载完成！");
     }

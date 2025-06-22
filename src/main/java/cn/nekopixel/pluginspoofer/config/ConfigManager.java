@@ -35,4 +35,20 @@ public class ConfigManager {
     public boolean shouldBlockNonMinecraftNamespaces() {
         return true;
     }
+    
+    public boolean isCustomPluginListEnabled() {
+        return config.getBoolean("plugins.enabled", true);
+    }
+    
+    public List<String> getPaperPlugins() {
+        return config.getStringList("plugins.paper");
+    }
+    
+    public List<String> getBukkitPlugins() {
+        return config.getStringList("plugins.bukkit");
+    }
+    
+    public String getUnknownCommandMessage() {
+        return config.getString("Unknown command. Type \"/help\" for help.");
+    }
 } 

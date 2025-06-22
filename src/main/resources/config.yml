@@ -10,4 +10,21 @@ blocked-commands:
   - "bukkit:pl"
   - "bukkit:version"
   - "bukkit:ver"
-  - "bukkit:about" 
+  - "bukkit:about"
+
+plugins:
+  enabled: true
+  paper:
+    - "Geyser-Spigot"
+    - "ViaVersion"
+    - "ProtocolLib"
+  bukkit:
+    - "EssentialsX"
+    - "WorldEdit"
+    - "LuckPerms"
+    - "Vault"
+    - "PlaceholderAPI"
+    - "CoreProtect"
+    - "WorldGuard"
+
+unknown-msg: "Unknown command. Type \"/help\" for help."

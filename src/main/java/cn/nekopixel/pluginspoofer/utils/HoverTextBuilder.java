@@ -17,7 +17,7 @@ public class HoverTextBuilder {
             .append(Component.text("You can find new plugins on Paper's plugin repository, Hangar.", NamedTextColor.WHITE))
             .append(Component.newline())
             .append(Component.newline())
-            .append(Component.text("https://hangar.papermc.io", NamedTextColor.WHITE))
+            .append(Component.text("https://hangar.papermc.io/", NamedTextColor.WHITE))
             .build();
         
         return Component.text("ℹ", INFO_COLOR)

@@ -1,11 +1,8 @@
 package cn.nekopixel.pluginspoofer.listener;
 
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
+import cn.nekopixel.pluginspoofer.utils.PluginListSender;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.TextColor;
-import org.bukkit.ChatColor;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,15 +11,14 @@ import org.bukkit.event.player.PlayerCommandSendEvent;
 import org.bukkit.event.server.TabCompleteEvent;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class CommandListener implements Listener {
     private final ConfigManager config;
-    private final BukkitAudiences adventure;
+    private final PluginListSender pluginListSender;
     
     public CommandListener(ConfigManager config, BukkitAudiences adventure) {
         this.config = config;
-        this.adventure = adventure;
+        this.pluginListSender = new PluginListSender(config, adventure);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -39,37 +35,12 @@ public class CommandListener implements Listener {
                 if ((cmdName.equals("pl") || cmdName.equals("plugins") || 
                      cmdName.equals("bukkit:pl") || cmdName.equals("bukkit:plugins")) 
                      && config.isCustomPluginListEnabled()) {
-                    sendCustomPluginList(event);
+                    pluginListSender.sendCustomPluginList(event.getPlayer());
                 } else {
                     event.getPlayer().sendMessage(config.getUnknownCommandMessage());
                 }
                 return;
             }
-        }
-    }
-    
-    private void sendCustomPluginList(PlayerCommandPreprocessEvent event) {
-        List<String> paperPlugins = config.getPaperPlugins();
-        List<String> bukkitPlugins = config.getBukkitPlugins();
-        int totalPlugins = paperPlugins.size() + bukkitPlugins.size();
-        
-        Player player = event.getPlayer();
-        
-        player.sendMessage(ChatColor.DARK_AQUA + "ℹ" + ChatColor.WHITE + " Server Plugins (" + totalPlugins + "):");
-        
-        if (!bukkitPlugins.isEmpty()) {
-            Component bukkitTitle = Component.text("Bukkit Plugins:")
-                .color(TextColor.fromHexString("#ea7f06"));
-            adventure.player(player).sendMessage(bukkitTitle);
-            
-            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, bukkitPlugins);
-            player.sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
-        }
-        
-        if (!paperPlugins.isEmpty()) {
-            player.sendMessage(ChatColor.DARK_AQUA + "Paper Plugins:");
-            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, paperPlugins);
-            player.sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
         }
     }
 

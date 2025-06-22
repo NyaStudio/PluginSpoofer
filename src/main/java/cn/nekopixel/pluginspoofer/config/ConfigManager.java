@@ -1,9 +1,12 @@
 package cn.nekopixel.pluginspoofer.config;
 
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
+import java.io.File;
 import java.util.List;
+import java.util.ArrayList;
 
 public class ConfigManager {
     private final Plugin plugin;
@@ -16,12 +19,18 @@ public class ConfigManager {
     
     public void loadConfig() {
         plugin.saveDefaultConfig();
-        plugin.reloadConfig();
-        this.config = plugin.getConfig();
+        
+        File configFile = new File(plugin.getDataFolder(), "config.yml");
+        if (configFile.exists()) {
+            this.config = YamlConfiguration.loadConfiguration(configFile);
+        } else {
+            plugin.reloadConfig();
+            this.config = plugin.getConfig();
+        }
     }
     
     public boolean isDebugEnabled() {
-        return config.getBoolean("debug", true);
+        return config.getBoolean("debug", false);
     }
     
     public List<String> getBlockedCommands() {
@@ -45,26 +54,44 @@ public class ConfigManager {
     }
     
     public List<String> getPaperEnabledPlugins() {
+        if (!config.contains("plugins.paper") || !config.contains("plugins.paper.enabled")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.paper.enabled");
     }
     
     public List<String> getPaperLegacyPlugins() {
+        if (!config.contains("plugins.paper") || !config.contains("plugins.paper.legacy")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.paper.legacy");
     }
     
     public List<String> getPaperDisabledPlugins() {
+        if (!config.contains("plugins.paper") || !config.contains("plugins.paper.disabled")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.paper.disabled");
     }
     
     public List<String> getBukkitEnabledPlugins() {
+        if (!config.contains("plugins.bukkit") || !config.contains("plugins.bukkit.enabled")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.bukkit.enabled");
     }
     
     public List<String> getBukkitLegacyPlugins() {
+        if (!config.contains("plugins.bukkit") || !config.contains("plugins.bukkit.legacy")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.bukkit.legacy");
     }
     
     public List<String> getBukkitDisabledPlugins() {
+        if (!config.contains("plugins.bukkit") || !config.contains("plugins.bukkit.disabled")) {
+            return new ArrayList<>();
+        }
         return config.getStringList("plugins.bukkit.disabled");
     }
     

@@ -34,12 +34,18 @@ public class PluginListSender {
         
         boolean useHover = hoverEnabled && serverSupportsHover;
 
-        Component infoIcon = useHover 
-            ? HoverTextBuilder.createInfoIcon()
-            : Component.text("ℹ", INFO_COLOR);
-            
-        Component title = infoIcon
-            .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE));
+        Component title;
+        if (useHover) {
+            title = Component.text()
+                .append(HoverTextBuilder.createInfoIcon())
+                .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE))
+                .build();
+        } else {
+            title = Component.text()
+                .append(Component.text("ℹ", INFO_COLOR))
+                .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE))
+                .build();
+        }
         
         try {
             if (ServerCompatibility.isPaper() && adventure == null) {

@@ -1,0 +1,39 @@
+package cn.nekopixel.pluginspoofer;
+
+import cn.nekopixel.pluginspoofer.config.ConfigManager;
+import cn.nekopixel.pluginspoofer.listener.CommandListener;
+import cn.nekopixel.pluginspoofer.debug.DebugPacketListener;
+import com.github.retrooper.packetevents.PacketEvents;
+import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
+import org.bukkit.plugin.java.JavaPlugin;
+
+public class Main extends JavaPlugin {
+    
+    private ConfigManager configManager;
+    
+    @Override
+    public void onLoad() {
+        PacketEvents.setAPI(SpigotPacketEventsBuilder.build(this));
+        PacketEvents.getAPI().load();
+    }
+    
+    @Override
+    public void onEnable() {
+        configManager = new ConfigManager(this);
+        PacketEvents.getAPI().init();
+        getServer().getPluginManager().registerEvents(new CommandListener(configManager), this);
+        PacketEvents.getAPI().getEventManager().registerListener(new DebugPacketListener(this, configManager));
+        
+        getLogger().info("加载完成！");
+    }
+    
+    @Override
+    public void onDisable() {
+        PacketEvents.getAPI().terminate();
+        getLogger().info("卸载完成！");
+    }
+    
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+}

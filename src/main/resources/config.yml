@@ -1,0 +1,13 @@
+debug: false
+blocked-commands:
+  - "plugins"
+  - "pl"
+  - "version"
+  - "ver"
+  - "about"
+  - "icanhasbukkit"
+  - "bukkit:plugins"
+  - "bukkit:pl"
+  - "bukkit:version"
+  - "bukkit:ver"
+  - "bukkit:about" 

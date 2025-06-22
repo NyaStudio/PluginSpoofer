@@ -49,6 +49,6 @@ public class ConfigManager {
     }
     
     public String getUnknownCommandMessage() {
-        return config.getString("Unknown command. Type \"/help\" for help.");
+        return config.getString("unknown-msg", "Unknown command. Type \"/help\" for help.");
     }
 } 

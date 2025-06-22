@@ -3,19 +3,20 @@ package cn.nekopixel.pluginspoofer.utils;
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
-
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.logging.Level;
+import java.lang.reflect.Method;
+import java.util.logging.Logger;
+import org.bukkit.Bukkit;
 
 public class PluginListSender {
     private final ConfigManager config;
     private final BukkitAudiences adventure;
+    private static final Logger logger = Bukkit.getLogger();
     
     private static final TextColor BUKKIT_COLOR = TextColor.fromHexString("#ea7f06");
     private static final TextColor INFO_COLOR = TextColor.fromHexString("#339dd7");
@@ -29,13 +30,11 @@ public class PluginListSender {
     public void sendCustomPluginList(Player player) {
         int totalPlugins = getTotalPluginCount();
         boolean hoverEnabled = config.isHoverTooltipsEnabled();
+        boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         
-        if (config.isDebugEnabled()) {
-            player.sendMessage("§7[Debug] Hover tooltips enabled: " + hoverEnabled);
-            player.sendMessage("§7[Debug] Adventure instance: " + (adventure != null ? "OK" : "NULL"));
-        }
+        boolean useHover = hoverEnabled && serverSupportsHover;
 
-        Component infoIcon = hoverEnabled 
+        Component infoIcon = useHover 
             ? HoverTextBuilder.createInfoIcon()
             : Component.text("ℹ", INFO_COLOR);
             
@@ -43,17 +42,21 @@ public class PluginListSender {
             .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE));
         
         try {
-            adventure.player(player).sendMessage(title);
+            if (ServerCompatibility.isPaper() && adventure == null) {
+                sendMessage(player, title);
+            } else if (adventure != null) {
+                adventure.player(player).sendMessage(title);
+            } else {
+                player.sendMessage("ℹ Server Plugins (" + totalPlugins + "):");
+            }
             
-            if (config.isDebugEnabled() && hoverEnabled) {
-                Component testHover = Component.text("§7[Debug] Hover test: ")
-                    .append(Component.text("Hover me!", NamedTextColor.GREEN)
-                        .hoverEvent(HoverEvent.showText(Component.text("If you see this, hover is working!", NamedTextColor.YELLOW))));
-                adventure.player(player).sendMessage(testHover);
+            if (config.isDebugEnabled() && hoverEnabled && !serverSupportsHover) {
+                logger.warning("Your server doesn't support hover tooltips natively.");
+                logger.warning("Consider using Paper 1.16.5+ for full hover support.");
             }
         } catch (Exception e) {
-            player.sendMessage("§c[Error] Failed to send message with Adventure API: " + e.getMessage());
             if (config.isDebugEnabled()) {
+                logger.severe("Failed to send message with Adventure API: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -72,10 +75,10 @@ public class PluginListSender {
         }
         
         Component bukkitTitle = Component.text("Bukkit Plugins:", BUKKIT_COLOR);
-        adventure.player(player).sendMessage(bukkitTitle);
+        sendMessage(player, bukkitTitle);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
-        adventure.player(player).sendMessage(pluginLine);
+        sendMessage(player, pluginLine);
     }
     
     private void sendPaperPlugins(Player player) {
@@ -88,15 +91,17 @@ public class PluginListSender {
         }
         
         Component paperTitle = Component.text("Paper Plugins:", NamedTextColor.DARK_AQUA);
-        adventure.player(player).sendMessage(paperTitle);
+        sendMessage(player, paperTitle);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
-        adventure.player(player).sendMessage(pluginLine);
+        sendMessage(player, pluginLine);
     }
     
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
         boolean hoverEnabled = config.isHoverTooltipsEnabled();
+        boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
+        boolean useHover = hoverEnabled && serverSupportsHover;
         
         List<PluginEntry> allPlugins = new ArrayList<>();
         for (String plugin : enabled) {
@@ -122,7 +127,7 @@ public class PluginListSender {
                     lineComponent = lineComponent.append(Component.text(entry.name, NamedTextColor.GREEN));
                     break;
                 case LEGACY:
-                    Component legacyMarker = hoverEnabled
+                    Component legacyMarker = useHover
                         ? HoverTextBuilder.createLegacyMarker(LEGACY_COLOR)
                         : Component.text("*", LEGACY_COLOR);
                     lineComponent = lineComponent.append(legacyMarker)
@@ -160,5 +165,24 @@ public class PluginListSender {
                config.getPaperEnabledPlugins().size() +
                config.getPaperLegacyPlugins().size() +
                config.getPaperDisabledPlugins().size();
+    }
+
+    private void sendMessage(Player player, Component message) {
+        if (ServerCompatibility.isPaper() && adventure == null) {
+            try {
+                Method sendMessageMethod = player.getClass().getMethod("sendMessage", Component.class);
+                sendMessageMethod.invoke(player, message);
+            } catch (Exception e) {
+                if (adventure != null) {
+                    adventure.player(player).sendMessage(message);
+                } else {
+                    player.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+                }
+            }
+        } else if (adventure != null) {
+            adventure.player(player).sendMessage(message);
+        } else {
+            player.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+        }
     }
 } 

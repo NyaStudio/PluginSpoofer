@@ -4,6 +4,7 @@ import cn.nekopixel.pluginspoofer.command.CommandHandler;
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import cn.nekopixel.pluginspoofer.listener.CommandListener;
 import cn.nekopixel.pluginspoofer.debug.DebugPacketListener;
+import cn.nekopixel.pluginspoofer.utils.ServerCompatibility;
 import com.github.retrooper.packetevents.PacketEvents;
 import io.github.retrooper.packetevents.factory.spigot.SpigotPacketEventsBuilder;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
@@ -22,7 +23,13 @@ public class Main extends JavaPlugin {
     
     @Override
     public void onEnable() {
-        adventure = BukkitAudiences.create(this);
+        if (!ServerCompatibility.isPaper()) {
+            adventure = BukkitAudiences.create(this);
+            getLogger().info("Using BukkitAudiences for Adventure API");
+        } else {
+            getLogger().info("Using Paper's native Adventure API");
+        }
+        
         configManager = new ConfigManager(this);
         PacketEvents.getAPI().init();
         getServer().getPluginManager().registerEvents(new CommandListener(configManager, adventure), this);

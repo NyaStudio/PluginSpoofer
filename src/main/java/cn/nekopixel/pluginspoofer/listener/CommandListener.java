@@ -51,13 +51,13 @@ public class CommandListener implements Listener {
         
         if (!bukkitPlugins.isEmpty()) {
             event.getPlayer().sendMessage(ChatColor.GOLD + "Bukkit Plugins:");
-            String pluginList = String.join(", ", bukkitPlugins);
+            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, bukkitPlugins);
             event.getPlayer().sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
         }
         
         if (!paperPlugins.isEmpty()) {
             event.getPlayer().sendMessage(ChatColor.DARK_AQUA + "Paper Plugins:");
-            String pluginList = String.join(", ", paperPlugins);
+            String pluginList = String.join(ChatColor.WHITE + ", " + ChatColor.GREEN, paperPlugins);
             event.getPlayer().sendMessage(ChatColor.GRAY + " - " + ChatColor.GREEN + pluginList);
         }
     }

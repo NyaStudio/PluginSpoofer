@@ -1,5 +1,5 @@
 name: PluginSpoofer
-version: 1.0.0-bukkit
+version: 1.0.0
 main: cn.nekopixel.pluginspoofer.Main
 api-version: 1.20
 depend: [packetevents]

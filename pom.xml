@@ -6,7 +6,7 @@
 
     <groupId>cn.nekopixel</groupId>
     <artifactId>pluginspoofer</artifactId>
-    <version>1.0.0-bukkit</version>
+    <version>1.0.0</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

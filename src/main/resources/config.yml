@@ -14,6 +14,7 @@ blocked-commands:
 
 plugins:
   enabled: true
+  hover-tooltips: true
   paper:
     enabled:
       - "Geyser-Spigot"

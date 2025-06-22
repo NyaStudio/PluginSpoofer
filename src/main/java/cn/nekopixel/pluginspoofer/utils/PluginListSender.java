@@ -26,8 +26,13 @@ public class PluginListSender {
     
     public void sendCustomPluginList(Player player) {
         int totalPlugins = getTotalPluginCount();
+        boolean hoverEnabled = config.isHoverTooltipsEnabled();
 
-        Component title = Component.text("ℹ", INFO_COLOR)
+        Component infoIcon = hoverEnabled 
+            ? HoverTextBuilder.createInfoIcon()
+            : Component.text("ℹ", INFO_COLOR);
+            
+        Component title = infoIcon
             .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE));
         adventure.player(player).sendMessage(title);
         
@@ -69,6 +74,7 @@ public class PluginListSender {
     
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
+        boolean hoverEnabled = config.isHoverTooltipsEnabled();
         
         List<String> sortedEnabled = new ArrayList<>(enabled);
         Collections.sort(sortedEnabled, String.CASE_INSENSITIVE_ORDER);
@@ -93,7 +99,11 @@ public class PluginListSender {
             if (!first) {
                 lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
             }
-            lineComponent = lineComponent.append(Component.text("*", LEGACY_COLOR))
+            Component legacyMarker = hoverEnabled
+                ? HoverTextBuilder.createLegacyMarker(LEGACY_COLOR)
+                : Component.text("*", LEGACY_COLOR);
+                
+            lineComponent = lineComponent.append(legacyMarker)
                                          .append(Component.text(plugin, NamedTextColor.GREEN));
             first = false;
         }

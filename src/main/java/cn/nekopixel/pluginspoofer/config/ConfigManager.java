@@ -40,6 +40,10 @@ public class ConfigManager {
         return config.getBoolean("plugins.enabled", true);
     }
     
+    public boolean isHoverTooltipsEnabled() {
+        return config.getBoolean("plugins.hover-tooltips", true);
+    }
+    
     public List<String> getPaperEnabledPlugins() {
         return config.getStringList("plugins.paper.enabled");
     }

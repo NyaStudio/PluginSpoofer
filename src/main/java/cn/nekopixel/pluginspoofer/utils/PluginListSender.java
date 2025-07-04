@@ -14,25 +14,36 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 
 public class PluginListSender {
+    private static final TextColor INFO_COLOR = TextColor.color(0x00BFFF);
+    private static final TextColor PAPER_COLOR = TextColor.color(0x00AAAA);
+    
     private final ConfigManager config;
     private final BukkitAudiences adventure;
-    private static final Logger logger = Bukkit.getLogger();
-    
-    private static final TextColor BUKKIT_COLOR = TextColor.fromHexString("#ea7f06");
-    private static final TextColor INFO_COLOR = TextColor.fromHexString("#339dd7");
-    private static final TextColor LEGACY_COLOR = BUKKIT_COLOR;
+    private final Logger logger;
     
     public PluginListSender(ConfigManager config, BukkitAudiences adventure) {
         this.config = config;
         this.adventure = adventure;
+        this.logger = Logger.getLogger("PluginSpoofer");
     }
     
     public void sendCustomPluginList(Player player) {
+        if (config.isDebugEnabled()) {
+            logger.info("[PluginSpoofer] sendCustomPluginList 被调用，玩家: " + player.getName());
+        }
+        
         int totalPlugins = getTotalPluginCount();
         boolean hoverEnabled = config.isHoverTooltipsEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         
         boolean useHover = hoverEnabled && serverSupportsHover;
+        
+        boolean useLegacyFormat = shouldUseLegacyFormat(player);
+        
+        if (useLegacyFormat) {
+            sendLegacyPluginList(player);
+            return;
+        }
 
         Component title;
         if (useHover) {
@@ -57,12 +68,12 @@ public class PluginListSender {
             }
             
             if (config.isDebugEnabled() && hoverEnabled && !serverSupportsHover) {
-                logger.warning("Your server doesn't support hover tooltips natively.");
-                logger.warning("Consider using Paper 1.16.5+ for full hover support.");
+                logger.warning("[PluginSpoofer] Your server doesn't support hover tooltips natively.");
+                logger.warning("[PluginSpoofer] Consider using Paper 1.16.5+ for full hover support.");
             }
         } catch (Exception e) {
             if (config.isDebugEnabled()) {
-                logger.severe("Failed to send message with Adventure API: " + e.getMessage());
+                logger.severe("[PluginSpoofer] Failed to send message with Adventure API: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -80,7 +91,7 @@ public class PluginListSender {
             return;
         }
         
-        Component bukkitTitle = Component.text("Bukkit Plugins:", BUKKIT_COLOR);
+        Component bukkitTitle = Component.text("Bukkit Plugins:", TextColor.color(0xFFD700));
         sendMessage(player, bukkitTitle);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
@@ -96,7 +107,7 @@ public class PluginListSender {
             return;
         }
         
-        Component paperTitle = Component.text("Paper Plugins:", NamedTextColor.DARK_AQUA);
+        Component paperTitle = Component.text("Paper Plugins:", PAPER_COLOR);
         sendMessage(player, paperTitle);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
@@ -134,8 +145,8 @@ public class PluginListSender {
                     break;
                 case LEGACY:
                     Component legacyMarker = useHover
-                        ? HoverTextBuilder.createLegacyMarker(LEGACY_COLOR)
-                        : Component.text("*", LEGACY_COLOR);
+                        ? HoverTextBuilder.createLegacyMarker(NamedTextColor.GOLD)
+                        : Component.text("*", NamedTextColor.GOLD);
                     lineComponent = lineComponent.append(legacyMarker)
                                                  .append(Component.text(entry.name, NamedTextColor.GREEN));
                     break;
@@ -148,6 +159,132 @@ public class PluginListSender {
         }
         
         return lineComponent;
+    }
+
+    private boolean shouldUseLegacyFormat(Player player) {
+        if (config.shouldForceLegacyFormat()) {
+            if (config.isDebugEnabled()) {
+                logger.info("[PluginSpoofer] Force legacy format enabled for " + player.getName());
+            }
+            return true;
+        }
+        
+        try {
+            if (Bukkit.getPluginManager().getPlugin("ViaVersion") != null) {
+                Class<?> viaAPI = Class.forName("com.viaversion.viaversion.api.Via");
+                Object api = viaAPI.getMethod("getAPI").invoke(null);
+                Method getPlayerVersion = api.getClass().getMethod("getPlayerVersion", Object.class);
+                int protocolVersion = (int) getPlayerVersion.invoke(api, player);
+                
+                if (config.isDebugEnabled()) {
+                    logger.info("[PluginSpoofer] Player " + player.getName() + " protocol version: " + protocolVersion);
+                }
+                
+                return protocolVersion < 393;
+            }
+            
+            if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null) {
+                try {
+                    Class<?> protocolManager = Class.forName("com.comphenix.protocol.ProtocolLibrary");
+                    Object manager = protocolManager.getMethod("getProtocolManager").invoke(null);
+                    Method getProtocolVersion = manager.getClass().getMethod("getProtocolVersion", Player.class);
+                    Object version = getProtocolVersion.invoke(manager, player);
+                    int protocolVersion = (int) version.getClass().getMethod("getVersion").invoke(version);
+                    
+                    if (config.isDebugEnabled()) {
+                        logger.info("[PluginSpoofer] Player " + player.getName() + " protocol version (ProtocolLib): " + protocolVersion);
+                    }
+                    
+                    return protocolVersion < 393;
+                } catch (Exception e) {
+                }
+            }
+        } catch (Exception e) {
+            if (config.isDebugEnabled()) {
+                logger.warning("[PluginSpoofer] Failed to detect client version: " + e.getMessage());
+            }
+        }
+        
+        String serverVersion = Bukkit.getVersion();
+        if (serverVersion.contains("1.20") || serverVersion.contains("1.21")) {
+            if (config.isDebugEnabled()) {
+                logger.info("[PluginSpoofer] High version server detected, using legacy format for safety");
+            }
+            return true;
+        }
+        
+        return false;
+    }
+
+    private void sendLegacyPluginList(Player player) {
+        if (config.isDebugEnabled()) {
+            logger.info("[PluginSpoofer] 使用传统格式发送插件列表给玩家: " + player.getName());
+        }
+        
+        int totalPlugins = getTotalPluginCount();
+        
+        player.sendMessage("§3ℹ§f Server Plugins (" + totalPlugins + "):");
+        
+        List<String> bukkitEnabled = config.getBukkitEnabledPlugins();
+        List<String> bukkitLegacy = config.getBukkitLegacyPlugins();
+        List<String> bukkitDisabled = config.getBukkitDisabledPlugins();
+        
+        if (!bukkitEnabled.isEmpty() || !bukkitLegacy.isEmpty() || !bukkitDisabled.isEmpty()) {
+            player.sendMessage("§6Bukkit Plugins:");
+            String pluginLine = buildLegacyPluginLine(bukkitEnabled, bukkitLegacy, bukkitDisabled);
+            player.sendMessage(pluginLine);
+        }
+        
+        List<String> paperEnabled = config.getPaperEnabledPlugins();
+        List<String> paperLegacy = config.getPaperLegacyPlugins();
+        List<String> paperDisabled = config.getPaperDisabledPlugins();
+        
+        if (!paperEnabled.isEmpty() || !paperLegacy.isEmpty() || !paperDisabled.isEmpty()) {
+            player.sendMessage("§3Paper Plugins:");
+            String pluginLine = buildLegacyPluginLine(paperEnabled, paperLegacy, paperDisabled);
+            player.sendMessage(pluginLine);
+        }
+    }
+
+    private String buildLegacyPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
+        List<PluginEntry> allPlugins = new ArrayList<>();
+        
+        for (String plugin : enabled) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.ENABLED));
+        }
+        for (String plugin : legacy) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.LEGACY));
+        }
+        for (String plugin : disabled) {
+            allPlugins.add(new PluginEntry(plugin, PluginType.DISABLED));
+        }
+        
+        allPlugins.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        
+        StringBuilder line = new StringBuilder("§7 - ");
+        boolean first = true;
+        
+        for (PluginEntry entry : allPlugins) {
+            if (!first) {
+                line.append("§f, ");
+            }
+            
+            switch (entry.type) {
+                case ENABLED:
+                    line.append("§a").append(entry.name);
+                    break;
+                case LEGACY:
+                    line.append("§6*§a").append(entry.name);
+                    break;
+                case DISABLED:
+                    line.append("§c").append(entry.name);
+                    break;
+            }
+            
+            first = false;
+        }
+        
+        return line.toString();
     }
     
     private static class PluginEntry {
@@ -174,21 +311,30 @@ public class PluginListSender {
     }
 
     private void sendMessage(Player player, Component message) {
-        if (ServerCompatibility.isPaper() && adventure == null) {
-            try {
-                Method sendMessageMethod = player.getClass().getMethod("sendMessage", Component.class);
-                sendMessageMethod.invoke(player, message);
-            } catch (Exception e) {
-                if (adventure != null) {
-                    adventure.player(player).sendMessage(message);
-                } else {
-                    player.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+        try {
+            if (ServerCompatibility.isPaper() && adventure == null) {
+                try {
+                    Method sendMessageMethod = player.getClass().getMethod("sendMessage", Component.class);
+                    sendMessageMethod.invoke(player, message);
+                } catch (Exception e) {
+                    sendLegacyMessage(player, message);
                 }
+            } else if (adventure != null) {
+                adventure.player(player).sendMessage(message);
+            } else {
+                sendLegacyMessage(player, message);
             }
-        } else if (adventure != null) {
-            adventure.player(player).sendMessage(message);
-        } else {
-            player.sendMessage(LegacyComponentSerializer.legacySection().serialize(message));
+        } catch (Exception e) {
+            sendLegacyMessage(player, message);
+        }
+    }
+
+    private void sendLegacyMessage(Player player, Component message) {
+        try {
+            String legacyText = LegacyComponentSerializer.legacySection().serialize(message);
+            player.sendMessage(legacyText);
+        } catch (Exception e) {
+            player.sendMessage(message.toString());
         }
     }
 } 

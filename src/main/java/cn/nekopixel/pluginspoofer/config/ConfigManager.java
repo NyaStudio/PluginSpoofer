@@ -53,6 +53,10 @@ public class ConfigManager {
         return config.getBoolean("plugins.hover-tooltips", true);
     }
     
+    public boolean shouldForceLegacyFormat() {
+        return config.getBoolean("plugins.force-legacy-format", false);
+    }
+
     public List<String> getPaperEnabledPlugins() {
         if (!config.contains("plugins.paper") || !config.contains("plugins.paper.enabled")) {
             return new ArrayList<>();

@@ -30,9 +30,18 @@ public class DebugPacketListener extends PacketListenerAbstract {
             for (String blocked : config.getBlockedCommands()) {
                 String blockedLower = blocked.toLowerCase();
                 if (command.startsWith(blockedLower) || command.contains(":" + blockedLower)) {
+                    if ((blockedLower.equals("pl") || blockedLower.equals("plugins") ||
+                         blockedLower.equals("bukkit:pl") || blockedLower.equals("bukkit:plugins")) 
+                        && config.isCustomPluginListEnabled()) {
+                        if (config.isDebugEnabled()) {
+                            plugin.getLogger().info("[DebugPacketListener] 检测到 pl/plugins 命令，传递给 CommandListener 处理: /" + chatCommand.getCommand());
+                        }
+                        return;
+                    }
+                    
                     event.setCancelled(true);
                     if (config.isDebugEnabled()) {
-                        plugin.getLogger().info("拦截了命令: /" + chatCommand.getCommand());
+                        plugin.getLogger().info("[DebugPacketListener] 拦截了命令: /" + chatCommand.getCommand());
                     }
                     return;
                 }
@@ -48,9 +57,18 @@ public class DebugPacketListener extends PacketListenerAbstract {
                 for (String blocked : config.getBlockedCommands()) {
                     String blockedLower = blocked.toLowerCase();
                     if (command.equals(blockedLower) || command.contains(":" + blockedLower)) {
+                        if ((blockedLower.equals("pl") || blockedLower.equals("plugins") ||
+                             blockedLower.equals("bukkit:pl") || blockedLower.equals("bukkit:plugins")) 
+                            && config.isCustomPluginListEnabled()) {
+                            if (config.isDebugEnabled()) {
+                                plugin.getLogger().info("[DebugPacketListener] 检测到 pl/plugins 命令，传递给 CommandListener 处理: " + chatMessage.getMessage());
+                            }
+                            return;
+                        }
+                        
                         event.setCancelled(true);
                         if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("拦截了命令: " + chatMessage.getMessage());
+                            plugin.getLogger().info("[DebugPacketListener] 拦截了命令: " + chatMessage.getMessage());
                         }
                         return;
                     }

@@ -32,7 +32,7 @@ public class Main extends JavaPlugin {
         
         configManager = new ConfigManager(this);
         PacketEvents.getAPI().init();
-        getServer().getPluginManager().registerEvents(new CommandListener(configManager, adventure), this);
+        getServer().getPluginManager().registerEvents(new CommandListener(this, configManager, adventure), this);
         PacketEvents.getAPI().getEventManager().registerListener(new DebugPacketListener(this, configManager));
         
         CommandHandler commandHandler = new CommandHandler(this);

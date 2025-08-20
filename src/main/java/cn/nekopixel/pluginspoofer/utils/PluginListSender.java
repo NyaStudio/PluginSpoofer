@@ -33,7 +33,7 @@ public class PluginListSender {
         }
         
         int totalPlugins = getTotalPluginCount();
-        boolean hoverEnabled = config.isHoverTooltipsEnabled() && config.isModernServerEnabled();
+        boolean hoverEnabled = config.isModernServerEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         
         boolean useHover = hoverEnabled && serverSupportsHover;
@@ -116,7 +116,7 @@ public class PluginListSender {
     
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
-        boolean hoverEnabled = config.isHoverTooltipsEnabled() && config.isModernServerEnabled();
+        boolean hoverEnabled = config.isModernServerEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         boolean useHover = hoverEnabled && serverSupportsHover;
         

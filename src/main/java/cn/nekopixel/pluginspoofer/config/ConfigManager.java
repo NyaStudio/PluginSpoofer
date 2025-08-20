@@ -49,10 +49,6 @@ public class ConfigManager {
         return config.getBoolean("plugins.enabled", true);
     }
     
-    public boolean isHoverTooltipsEnabled() {
-        return config.getBoolean("plugins.hover-tooltips", true);
-    }
-    
     public boolean shouldForceLegacyFormat() {
         return config.getBoolean("plugins.force-legacy-format", false);
     }

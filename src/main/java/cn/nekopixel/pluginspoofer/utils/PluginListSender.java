@@ -29,11 +29,11 @@ public class PluginListSender {
     
     public void sendCustomPluginList(Player player) {
         if (config.isDebugEnabled()) {
-            logger.info("[PluginSpoofer] sendCustomPluginList 被调用，玩家: " + player.getName());
+            logger.info("sendCustomPluginList 被调用，玩家: " + player.getName());
         }
         
         int totalPlugins = getTotalPluginCount();
-        boolean hoverEnabled = config.isHoverTooltipsEnabled();
+        boolean hoverEnabled = config.isHoverTooltipsEnabled() && config.isModernServerEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         
         boolean useHover = hoverEnabled && serverSupportsHover;
@@ -68,12 +68,12 @@ public class PluginListSender {
             }
             
             if (config.isDebugEnabled() && hoverEnabled && !serverSupportsHover) {
-                logger.warning("[PluginSpoofer] Your server doesn't support hover tooltips natively.");
-                logger.warning("[PluginSpoofer] Consider using Paper 1.16.5+ for full hover support.");
+                logger.warning("Your server doesn't support hover tooltips natively.");
+                logger.warning("Consider using Paper 1.16.5+ for full hover support.");
             }
         } catch (Exception e) {
             if (config.isDebugEnabled()) {
-                logger.severe("[PluginSpoofer] Failed to send message with Adventure API: " + e.getMessage());
+                logger.severe("Failed to send message with Adventure API: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -116,7 +116,7 @@ public class PluginListSender {
     
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
         Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
-        boolean hoverEnabled = config.isHoverTooltipsEnabled();
+        boolean hoverEnabled = config.isHoverTooltipsEnabled() && config.isModernServerEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         boolean useHover = hoverEnabled && serverSupportsHover;
         
@@ -164,7 +164,7 @@ public class PluginListSender {
     private boolean shouldUseLegacyFormat(Player player) {
         if (config.shouldForceLegacyFormat()) {
             if (config.isDebugEnabled()) {
-                logger.info("[PluginSpoofer] Force legacy format enabled for " + player.getName());
+                logger.info("[Debug] Force legacy format enabled for " + player.getName());
             }
             return true;
         }
@@ -177,7 +177,7 @@ public class PluginListSender {
                 int protocolVersion = (int) getPlayerVersion.invoke(api, player);
                 
                 if (config.isDebugEnabled()) {
-                    logger.info("[PluginSpoofer] Player " + player.getName() + " protocol version: " + protocolVersion);
+                    logger.info("[Debug] Player " + player.getName() + " protocol version: " + protocolVersion);
                 }
                 
                 return protocolVersion < 393;
@@ -192,7 +192,7 @@ public class PluginListSender {
                     int protocolVersion = (int) version.getClass().getMethod("getVersion").invoke(version);
                     
                     if (config.isDebugEnabled()) {
-                        logger.info("[PluginSpoofer] Player " + player.getName() + " protocol version (ProtocolLib): " + protocolVersion);
+                        logger.info("[Debug] Player " + player.getName() + " protocol version (ProtocolLib): " + protocolVersion);
                     }
                     
                     return protocolVersion < 393;
@@ -201,14 +201,14 @@ public class PluginListSender {
             }
         } catch (Exception e) {
             if (config.isDebugEnabled()) {
-                logger.warning("[PluginSpoofer] Failed to detect client version: " + e.getMessage());
+                logger.warning("[Debug] Failed to detect client version: " + e.getMessage());
             }
         }
         
         String serverVersion = Bukkit.getVersion();
         if (serverVersion.contains("1.20") || serverVersion.contains("1.21")) {
             if (config.isDebugEnabled()) {
-                logger.info("[PluginSpoofer] High version server detected, using legacy format for safety");
+                logger.info("[Debug] High version server detected, using legacy format for safety");
             }
             return true;
         }
@@ -218,7 +218,7 @@ public class PluginListSender {
 
     private void sendLegacyPluginList(Player player) {
         if (config.isDebugEnabled()) {
-            logger.info("[PluginSpoofer] 使用传统格式发送插件列表给玩家: " + player.getName());
+            logger.info("[Debug] use legacy type send to: " + player.getName());
         }
         
         int totalPlugins = getTotalPluginCount();

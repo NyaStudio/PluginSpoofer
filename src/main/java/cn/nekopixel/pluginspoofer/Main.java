@@ -39,7 +39,7 @@ public class Main extends JavaPlugin {
         getCommand("pluginspoofer").setExecutor(commandHandler);
         getCommand("pluginspoofer").setTabCompleter(commandHandler);
         
-        getLogger().info("加载完成！");
+        getLogger().info("Enabled！");
     }
     
     @Override
@@ -48,7 +48,7 @@ public class Main extends JavaPlugin {
             adventure.close();
         }
         PacketEvents.getAPI().terminate();
-        getLogger().info("卸载完成！");
+        getLogger().info("Disabled！");
     }
     
     public ConfigManager getConfigManager() {

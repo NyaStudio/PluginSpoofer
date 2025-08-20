@@ -34,14 +34,14 @@ public class DebugPacketListener extends PacketListenerAbstract {
                          blockedLower.equals("bukkit:pl") || blockedLower.equals("bukkit:plugins")) 
                         && config.isCustomPluginListEnabled()) {
                         if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("[DebugPacketListener] 检测到 pl/plugins 命令，传递给 CommandListener 处理: /" + chatCommand.getCommand());
+                            plugin.getLogger().info("[Debug] Detected pl/plugins command, pass to CommandListener: /" + chatCommand.getCommand());
                         }
                         return;
                     }
                     
                     event.setCancelled(true);
                     if (config.isDebugEnabled()) {
-                        plugin.getLogger().info("[DebugPacketListener] 拦截了命令: /" + chatCommand.getCommand());
+                        plugin.getLogger().info("[Debug] Caught Command: /" + chatCommand.getCommand());
                     }
                     return;
                 }
@@ -61,14 +61,14 @@ public class DebugPacketListener extends PacketListenerAbstract {
                              blockedLower.equals("bukkit:pl") || blockedLower.equals("bukkit:plugins")) 
                             && config.isCustomPluginListEnabled()) {
                             if (config.isDebugEnabled()) {
-                                plugin.getLogger().info("[DebugPacketListener] 检测到 pl/plugins 命令，传递给 CommandListener 处理: " + chatMessage.getMessage());
+                                plugin.getLogger().info("[Debug] Detected pl/plugins command, pass to CommandListener: /: " + chatMessage.getMessage());
                             }
                             return;
                         }
                         
                         event.setCancelled(true);
                         if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("[DebugPacketListener] 拦截了命令: " + chatMessage.getMessage());
+                            plugin.getLogger().info("[Debug] Caught Command: " + chatMessage.getMessage());
                         }
                         return;
                     }
@@ -83,7 +83,7 @@ public class DebugPacketListener extends PacketListenerAbstract {
             if ((text.equals("/") || text.trim().equals("/")) && config.shouldBlockSlashCompletion()) {
                 event.setCancelled(true);
                 if (config.isDebugEnabled()) {
-                    plugin.getLogger().info("拦截了 Tab 补全请求: " + tabComplete.getText());
+                    plugin.getLogger().info("[Debug] Caught Tab Request: " + tabComplete.getText());
                 }
                 return;
             }
@@ -93,7 +93,7 @@ public class DebugPacketListener extends PacketListenerAbstract {
                 if (text.startsWith("/" + blockedLower) || text.contains(":" + blockedLower)) {
                     event.setCancelled(true);
                     if (config.isDebugEnabled()) {
-                        plugin.getLogger().info("拦截了 Tab 补全请求: " + tabComplete.getText());
+                        plugin.getLogger().info("[Debug] Caught Tab Request: " + tabComplete.getText());
                     }
                     return;
                 }
@@ -106,7 +106,7 @@ public class DebugPacketListener extends PacketListenerAbstract {
                     if (!namespace.equals("minecraft")) {
                         event.setCancelled(true);
                         if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("拦截了非 minecraft 命名空间: " + tabComplete.getText());
+                            plugin.getLogger().info("[Debug] Caught Non-minecraft namespace: " + tabComplete.getText());
                         }
                     }
                 }

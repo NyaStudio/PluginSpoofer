@@ -1,4 +1,5 @@
 debug: false
+modern-server: true
 blocked-commands:
   - "plugins"
   - "pl"
@@ -40,5 +41,3 @@ plugins:
     disabled:
       - "CoreProtect"
       - "WorldGuard"
-
-unknown-msg: "Unknown command. Type \"/help\" for help."

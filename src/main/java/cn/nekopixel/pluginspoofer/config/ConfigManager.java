@@ -109,7 +109,7 @@ public class ConfigManager {
         return getBukkitEnabledPlugins();
     }
     
-    public String getUnknownCommandMessage() {
-        return config.getString("unknown-msg", "Unknown command. Type \"/help\" for help.");
+    public boolean isModernServerEnabled() {
+        return config.getBoolean("modern-server", true);
     }
 } 

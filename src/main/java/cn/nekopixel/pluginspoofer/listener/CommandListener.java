@@ -2,8 +2,12 @@ package cn.nekopixel.pluginspoofer.listener;
 
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
 import cn.nekopixel.pluginspoofer.utils.PluginListSender;
+import cn.nekopixel.pluginspoofer.utils.ModernMessageBuilder;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -18,10 +22,12 @@ public class CommandListener implements Listener {
     private final ConfigManager config;
     private final PluginListSender pluginListSender;
     private final Plugin plugin;
+    private final BukkitAudiences adventure;
     
     public CommandListener(Plugin plugin, ConfigManager config, BukkitAudiences adventure) {
         this.plugin = plugin;
         this.config = config;
+        this.adventure = adventure;
         this.pluginListSender = new PluginListSender(config, adventure);
     }
 
@@ -35,7 +41,7 @@ public class CommandListener implements Listener {
                 baseCommand.equals(blocked.toLowerCase())) {
                 
                 if (config.isDebugEnabled()) {
-                    plugin.getLogger().info("[PluginSpoofer] 拦截了命令: " + baseCommand);
+                    plugin.getLogger().info("[Debug] Caught Command: " + event.getMessage());
                 }
                 
                 event.setCancelled(true);
@@ -51,11 +57,17 @@ public class CommandListener implements Listener {
                     
                 } else {
                     if (config.isDebugEnabled()) {
-                        plugin.getLogger().info("[PluginSpoofer] 发送未知命令消息");
+                        plugin.getLogger().info("[Debug] Send unknown command: " + event.getMessage());
                     }
                     
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                        event.getPlayer().sendMessage(config.getUnknownCommandMessage());
+                        if (config.isModernServerEnabled()) {
+                            Component modernMessage = ModernMessageBuilder.createModernUnknownCommandMessage(event.getMessage());
+                            sendAdventureMessage(event.getPlayer(), modernMessage);
+                        } else {
+                            Component legacyMessage = ModernMessageBuilder.createLegacyUnknownCommandMessage();
+                            sendAdventureMessage(event.getPlayer(), legacyMessage);
+                        }
                     }, 1L);
                 }
                 return;
@@ -98,6 +110,31 @@ public class CommandListener implements Listener {
                     event.setCancelled(true);
                     event.setCompletions(new ArrayList<>());
                 }
+            }
+        }
+    }
+    
+    private void sendAdventureMessage(Player player, Component message) {
+        try {
+            if (adventure != null) {
+                adventure.player(player).sendMessage(message);
+            } else {
+                try {
+                    player.getClass().getMethod("sendMessage", Component.class).invoke(player, message);
+                } catch (Exception paperEx) {
+                    String legacyText = LegacyComponentSerializer.legacySection().serialize(message);
+                    player.sendMessage(legacyText);
+                }
+            }
+        } catch (Exception e) {
+            if (config.isDebugEnabled()) {
+                plugin.getLogger().warning("[Debug] Send Message Failed: " + e.getMessage());
+            }
+            try {
+                String legacyText = LegacyComponentSerializer.legacySection().serialize(message);
+                player.sendMessage(legacyText);
+            } catch (Exception e2) {
+                player.sendMessage("Unknown command. Type \"/help\" for help.");
             }
         }
     }

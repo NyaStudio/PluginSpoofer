@@ -29,7 +29,7 @@ public class PluginListSender {
     
     public void sendCustomPluginList(Player player) {
         if (config.isDebugEnabled()) {
-            logger.info("sendCustomPluginList 被调用，玩家: " + player.getName());
+            logger.info("sendCustomPluginList called by: " + player.getName());
         }
         
         int totalPlugins = getTotalPluginCount();
@@ -53,8 +53,7 @@ public class PluginListSender {
                 .build();
         } else {
             title = Component.text()
-                .append(Component.text("ℹ", INFO_COLOR))
-                .append(Component.text(" Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE))
+                .append(Component.text("Server Plugins (" + totalPlugins + "):", NamedTextColor.WHITE))
                 .build();
         }
         
@@ -64,7 +63,11 @@ public class PluginListSender {
             } else if (adventure != null) {
                 adventure.player(player).sendMessage(title);
             } else {
-                player.sendMessage("ℹ Server Plugins (" + totalPlugins + "):");
+                if (hoverEnabled) {
+                    player.sendMessage("ℹ Server Plugins (" + totalPlugins + "):");
+                } else {
+                    player.sendMessage("Server Plugins (" + totalPlugins + "):");
+                }
             }
             
             if (config.isDebugEnabled() && hoverEnabled && !serverSupportsHover) {
@@ -223,7 +226,11 @@ public class PluginListSender {
         
         int totalPlugins = getTotalPluginCount();
         
-        player.sendMessage("§3ℹ§f Server Plugins (" + totalPlugins + "):");
+        if (config.isModernServerEnabled()) {
+            player.sendMessage("§3ℹ§f Server Plugins (" + totalPlugins + "):");
+        } else {
+            player.sendMessage("§fServer Plugins (" + totalPlugins + "):");
+        }
         
         List<String> bukkitEnabled = config.getBukkitEnabledPlugins();
         List<String> bukkitLegacy = config.getBukkitLegacyPlugins();

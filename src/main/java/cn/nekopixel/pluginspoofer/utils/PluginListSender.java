@@ -14,9 +14,8 @@ import java.util.logging.Logger;
 import org.bukkit.Bukkit;
 
 public class PluginListSender {
-    private static final TextColor INFO_COLOR = TextColor.color(0x00BFFF);
     private static final TextColor PAPER_COLOR = TextColor.color(0x00AAAA);
-    
+
     private final ConfigManager config;
     private final BukkitAudiences adventure;
     private final Logger logger;
@@ -33,11 +32,11 @@ public class PluginListSender {
         }
         
         int totalPlugins = getTotalPluginCount();
-        boolean hoverEnabled = config.isModernServerEnabled();
+        boolean modernServer = config.isModernServerEnabled();
         boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
         
-        boolean useHover = hoverEnabled && serverSupportsHover;
-        
+        boolean useHover = modernServer && serverSupportsHover;
+
         boolean useLegacyFormat = shouldUseLegacyFormat(player);
         
         if (useLegacyFormat) {
@@ -63,14 +62,14 @@ public class PluginListSender {
             } else if (adventure != null) {
                 adventure.player(player).sendMessage(title);
             } else {
-                if (hoverEnabled) {
+                if (modernServer) {
                     player.sendMessage("ℹ Server Plugins (" + totalPlugins + "):");
                 } else {
                     player.sendMessage("Server Plugins (" + totalPlugins + "):");
                 }
             }
             
-            if (config.isDebugEnabled() && hoverEnabled && !serverSupportsHover) {
+            if (config.isDebugEnabled() && modernServer && !serverSupportsHover) {
                 logger.warning("Your server doesn't support hover tooltips natively.");
                 logger.warning("Consider using Paper 1.16.5+ for full hover support.");
             }
@@ -86,44 +85,74 @@ public class PluginListSender {
     }
     
     private void sendBukkitPlugins(Player player) {
-        List<String> enabled = config.getBukkitEnabledPlugins();
-        List<String> legacy = config.getBukkitLegacyPlugins();
-        List<String> disabled = config.getBukkitDisabledPlugins();
-        
-        if (enabled.isEmpty() && legacy.isEmpty() && disabled.isEmpty()) {
-            return;
-        }
-        
-        Component bukkitTitle = Component.text("Bukkit Plugins:", NamedTextColor.GOLD);
-        sendMessage(player, bukkitTitle);
-        
-        Component pluginLine = buildPluginLine(enabled, legacy, disabled);
-        sendMessage(player, pluginLine);
+        sendPluginCategory(player, "Bukkit Plugins:", NamedTextColor.GOLD,
+            config.getBukkitEnabledPlugins(),
+            config.getBukkitLegacyPlugins(),
+            config.getBukkitDisabledPlugins());
     }
     
     private void sendPaperPlugins(Player player) {
-        List<String> enabled = config.getPaperEnabledPlugins();
-        List<String> legacy = config.getPaperLegacyPlugins();
-        List<String> disabled = config.getPaperDisabledPlugins();
-        
+        sendPluginCategory(player, "Paper Plugins:", PAPER_COLOR,
+            config.getPaperEnabledPlugins(),
+            config.getPaperLegacyPlugins(),
+            config.getPaperDisabledPlugins());
+    }
+    
+    private void sendPluginCategory(Player player, String title, TextColor titleColor,
+                                  List<String> enabled, List<String> legacy, List<String> disabled) {
         if (enabled.isEmpty() && legacy.isEmpty() && disabled.isEmpty()) {
             return;
         }
         
-        Component paperTitle = Component.text("Paper Plugins:", PAPER_COLOR);
-        sendMessage(player, paperTitle);
+        Component titleComponent = Component.text(title, titleColor);
+        sendMessage(player, titleComponent);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
         sendMessage(player, pluginLine);
     }
     
     private Component buildPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
-        Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
-        boolean hoverEnabled = config.isModernServerEnabled();
-        boolean serverSupportsHover = ServerCompatibility.shouldUseHoverTooltips();
-        boolean useHover = hoverEnabled && serverSupportsHover;
+        boolean useHover = shouldUseHoverFeatures();
+        List<PluginEntry> allPlugins = createSortedPluginList(enabled, legacy, disabled);
         
+        Component lineComponent = Component.text(" - ", NamedTextColor.GRAY);
+        boolean first = true;
+        
+        for (PluginEntry entry : allPlugins) {
+            if (!first) {
+                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
+            }
+            
+            lineComponent = lineComponent.append(createPluginComponent(entry, useHover));
+            first = false;
+        }
+        
+        return lineComponent;
+    }
+    
+    private Component createPluginComponent(PluginEntry entry, boolean useHover) {
+        switch (entry.type) {
+            case ENABLED:
+                return Component.text(entry.name, NamedTextColor.GREEN);
+            case LEGACY:
+                Component legacyMarker = useHover
+                    ? HoverTextBuilder.createLegacyMarker(NamedTextColor.YELLOW)
+                    : Component.text("*", NamedTextColor.YELLOW);
+                return legacyMarker.append(Component.text(entry.name, NamedTextColor.GREEN));
+            case DISABLED:
+                return Component.text(entry.name, NamedTextColor.RED);
+            default:
+                return Component.text(entry.name, NamedTextColor.WHITE);
+        }
+    }
+    
+    private boolean shouldUseHoverFeatures() {
+        return config.isModernServerEnabled() && ServerCompatibility.shouldUseHoverTooltips();
+    }
+    
+    private List<PluginEntry> createSortedPluginList(List<String> enabled, List<String> legacy, List<String> disabled) {
         List<PluginEntry> allPlugins = new ArrayList<>();
+        
         for (String plugin : enabled) {
             allPlugins.add(new PluginEntry(plugin, PluginType.ENABLED));
         }
@@ -135,33 +164,7 @@ public class PluginListSender {
         }
         
         allPlugins.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
-        boolean first = true;
-        
-        for (PluginEntry entry : allPlugins) {
-            if (!first) {
-                lineComponent = lineComponent.append(Component.text(", ", NamedTextColor.WHITE));
-            }
-            
-            switch (entry.type) {
-                case ENABLED:
-                    lineComponent = lineComponent.append(Component.text(entry.name, NamedTextColor.GREEN));
-                    break;
-                case LEGACY:
-                    Component legacyMarker = useHover
-                        ? HoverTextBuilder.createLegacyMarker(NamedTextColor.YELLOW)
-                        : Component.text("*", NamedTextColor.YELLOW);
-                    lineComponent = lineComponent.append(legacyMarker)
-                                                 .append(Component.text(entry.name, NamedTextColor.GREEN));
-                    break;
-                case DISABLED:
-                    lineComponent = lineComponent.append(Component.text(entry.name, NamedTextColor.RED));
-                    break;
-            }
-            
-            first = false;
-        }
-        
-        return lineComponent;
+        return allPlugins;
     }
 
     private boolean shouldUseLegacyFormat(Player player) {
@@ -172,40 +175,9 @@ public class PluginListSender {
             return true;
         }
         
-        try {
-            if (Bukkit.getPluginManager().getPlugin("ViaVersion") != null) {
-                Class<?> viaAPI = Class.forName("com.viaversion.viaversion.api.Via");
-                Object api = viaAPI.getMethod("getAPI").invoke(null);
-                Method getPlayerVersion = api.getClass().getMethod("getPlayerVersion", Object.class);
-                int protocolVersion = (int) getPlayerVersion.invoke(api, player);
-                
-                if (config.isDebugEnabled()) {
-                    logger.info("[Debug] Player " + player.getName() + " protocol version: " + protocolVersion);
-                }
-                
-                return protocolVersion < 393;
-            }
-            
-            if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null) {
-                try {
-                    Class<?> protocolManager = Class.forName("com.comphenix.protocol.ProtocolLibrary");
-                    Object manager = protocolManager.getMethod("getProtocolManager").invoke(null);
-                    Method getProtocolVersion = manager.getClass().getMethod("getProtocolVersion", Player.class);
-                    Object version = getProtocolVersion.invoke(manager, player);
-                    int protocolVersion = (int) version.getClass().getMethod("getVersion").invoke(version);
-                    
-                    if (config.isDebugEnabled()) {
-                        logger.info("[Debug] Player " + player.getName() + " protocol version (ProtocolLib): " + protocolVersion);
-                    }
-                    
-                    return protocolVersion < 393;
-                } catch (Exception e) {
-                }
-            }
-        } catch (Exception e) {
-            if (config.isDebugEnabled()) {
-                logger.warning("[Debug] Failed to detect client version: " + e.getMessage());
-            }
+        Integer protocolVersion = getPlayerProtocolVersion(player);
+        if (protocolVersion != null) {
+            return protocolVersion < 393;  // 1.13
         }
         
         String serverVersion = Bukkit.getVersion();
@@ -217,6 +189,61 @@ public class PluginListSender {
         }
         
         return false;
+    }
+    
+    private Integer getPlayerProtocolVersion(Player player) {
+        try {
+            // try ViaVersion
+            if (Bukkit.getPluginManager().getPlugin("ViaVersion") != null) {
+                Integer version = getViaVersionProtocol(player);
+                if (version != null) {
+                    if (config.isDebugEnabled()) {
+                        logger.info("[Debug] Player " + player.getName() + " protocol version: " + version);
+                    }
+                    return version;
+                }
+            }
+            
+            // try ProtocolLib
+            if (Bukkit.getPluginManager().getPlugin("ProtocolLib") != null) {
+                Integer version = getProtocolLibVersion(player);
+                if (version != null) {
+                    if (config.isDebugEnabled()) {
+                        logger.info("[Debug] Player " + player.getName() + " protocol version (ProtocolLib): " + version);
+                    }
+                    return version;
+                }
+            }
+        } catch (Exception e) {
+            if (config.isDebugEnabled()) {
+                logger.warning("[Debug] Failed to detect client version: " + e.getMessage());
+            }
+        }
+        
+        return null;
+    }
+    
+    private Integer getViaVersionProtocol(Player player) {
+        try {
+            Class<?> viaAPI = Class.forName("com.viaversion.viaversion.api.Via");
+            Object api = viaAPI.getMethod("getAPI").invoke(null);
+            Method getPlayerVersion = api.getClass().getMethod("getPlayerVersion", Object.class);
+            return (Integer) getPlayerVersion.invoke(api, player);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private Integer getProtocolLibVersion(Player player) {
+        try {
+            Class<?> protocolManager = Class.forName("com.comphenix.protocol.ProtocolLibrary");
+            Object manager = protocolManager.getMethod("getProtocolManager").invoke(null);
+            Method getProtocolVersion = manager.getClass().getMethod("getProtocolVersion", Player.class);
+            Object version = getProtocolVersion.invoke(manager, player);
+            return (Integer) version.getClass().getMethod("getVersion").invoke(version);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void sendLegacyPluginList(Player player) {
@@ -232,41 +259,30 @@ public class PluginListSender {
             player.sendMessage("§fServer Plugins (" + totalPlugins + "):");
         }
         
-        List<String> bukkitEnabled = config.getBukkitEnabledPlugins();
-        List<String> bukkitLegacy = config.getBukkitLegacyPlugins();
-        List<String> bukkitDisabled = config.getBukkitDisabledPlugins();
+        sendLegacyPluginCategory(player, "§6Bukkit Plugins:",
+            config.getBukkitEnabledPlugins(),
+            config.getBukkitLegacyPlugins(),
+            config.getBukkitDisabledPlugins());
         
-        if (!bukkitEnabled.isEmpty() || !bukkitLegacy.isEmpty() || !bukkitDisabled.isEmpty()) {
-            player.sendMessage("§6Bukkit Plugins:");
-            String pluginLine = buildLegacyPluginLine(bukkitEnabled, bukkitLegacy, bukkitDisabled);
-            player.sendMessage(pluginLine);
+        sendLegacyPluginCategory(player, "§3Paper Plugins:",
+            config.getPaperEnabledPlugins(),
+            config.getPaperLegacyPlugins(),
+            config.getPaperDisabledPlugins());
+    }
+    
+    private void sendLegacyPluginCategory(Player player, String title,
+                                        List<String> enabled, List<String> legacy, List<String> disabled) {
+        if (enabled.isEmpty() && legacy.isEmpty() && disabled.isEmpty()) {
+            return;
         }
         
-        List<String> paperEnabled = config.getPaperEnabledPlugins();
-        List<String> paperLegacy = config.getPaperLegacyPlugins();
-        List<String> paperDisabled = config.getPaperDisabledPlugins();
-        
-        if (!paperEnabled.isEmpty() || !paperLegacy.isEmpty() || !paperDisabled.isEmpty()) {
-            player.sendMessage("§3Paper Plugins:");
-            String pluginLine = buildLegacyPluginLine(paperEnabled, paperLegacy, paperDisabled);
-            player.sendMessage(pluginLine);
-        }
+        player.sendMessage(title);
+        String pluginLine = buildLegacyPluginLine(enabled, legacy, disabled);
+        player.sendMessage(pluginLine);
     }
 
     private String buildLegacyPluginLine(List<String> enabled, List<String> legacy, List<String> disabled) {
-        List<PluginEntry> allPlugins = new ArrayList<>();
-        
-        for (String plugin : enabled) {
-            allPlugins.add(new PluginEntry(plugin, PluginType.ENABLED));
-        }
-        for (String plugin : legacy) {
-            allPlugins.add(new PluginEntry(plugin, PluginType.LEGACY));
-        }
-        for (String plugin : disabled) {
-            allPlugins.add(new PluginEntry(plugin, PluginType.DISABLED));
-        }
-        
-        allPlugins.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
+        List<PluginEntry> allPlugins = createSortedPluginList(enabled, legacy, disabled);
         
         StringBuilder line = new StringBuilder("§7 - ");
         boolean first = true;
@@ -276,22 +292,24 @@ public class PluginListSender {
                 line.append("§f, ");
             }
             
-            switch (entry.type) {
-                case ENABLED:
-                    line.append("§a").append(entry.name);
-                    break;
-                case LEGACY:
-                    line.append("§6*§a").append(entry.name);
-                    break;
-                case DISABLED:
-                    line.append("§c").append(entry.name);
-                    break;
-            }
-            
+            line.append(createLegacyPluginText(entry));
             first = false;
         }
         
         return line.toString();
+    }
+    
+    private String createLegacyPluginText(PluginEntry entry) {
+        switch (entry.type) {
+            case ENABLED:
+                return "§a" + entry.name;
+            case LEGACY:
+                return "§6*§a" + entry.name;
+            case DISABLED:
+                return "§c" + entry.name;
+            default:
+                return "§f" + entry.name;
+        }
     }
     
     private static class PluginEntry {

@@ -91,7 +91,7 @@ public class PluginListSender {
             return;
         }
         
-        Component bukkitTitle = Component.text("Bukkit Plugins:", TextColor.color(0xFFD700));
+        Component bukkitTitle = Component.text("Bukkit Plugins:", NamedTextColor.GOLD);
         sendMessage(player, bukkitTitle);
         
         Component pluginLine = buildPluginLine(enabled, legacy, disabled);
@@ -145,8 +145,8 @@ public class PluginListSender {
                     break;
                 case LEGACY:
                     Component legacyMarker = useHover
-                        ? HoverTextBuilder.createLegacyMarker(NamedTextColor.GOLD)
-                        : Component.text("*", NamedTextColor.GOLD);
+                        ? HoverTextBuilder.createLegacyMarker(NamedTextColor.YELLOW)
+                        : Component.text("*", NamedTextColor.YELLOW);
                     lineComponent = lineComponent.append(legacyMarker)
                                                  .append(Component.text(entry.name, NamedTextColor.GREEN));
                     break;

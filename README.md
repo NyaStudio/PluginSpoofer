@@ -1,5 +1,6 @@
 # PluginSpoofer
-A Velocity &amp; Bukkit Plugin to Spoof Client the Server Plugin List
+A Velocity &amp; Bukkit Plugin to Spoof Client the Server Plugin List  
+Velocity support is still planned
 
 ## Features
 依赖于`packetevents`，可以防范某些外挂发包获取插件列表，同时可自定义伪造的插件列表，支持 Paper 格式
@@ -7,6 +8,7 @@ A Velocity &amp; Bukkit Plugin to Spoof Client the Server Plugin List
 ## Config
 ```yml
 debug: false
+modern-server: true  # 伪造高版本服务器特性（1.13+）
 blocked-commands:
   - "plugins"
   - "pl"
@@ -22,7 +24,6 @@ blocked-commands:
 
 plugins:
   enabled: true
-  hover-tooltips: true  # 新点的 Paper 会有一个悬停文字，用于解释某些标记，仅限 Paper 且带有 Adventure API 的版本
   paper:
     enabled:
       - "ViaVersion"
@@ -40,14 +41,13 @@ plugins:
       - "GroupManager"
     disabled:
       - "WorldGuard"
-
-unknown-msg: "Unknown command. Type \"/help\" for help."
 ```
 
 ## Commands
 - /ps
 - /ps help
 - /ps reload
+- /ps version
 
 ## License
 Under AGPL-3.0

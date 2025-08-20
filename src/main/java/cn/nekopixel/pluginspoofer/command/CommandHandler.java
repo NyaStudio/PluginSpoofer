@@ -34,6 +34,9 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
                 plugin.getConfigManager().loadConfig();
                 sender.sendMessage(ChatColor.GREEN + "PluginSpoofer 配置已重载！");
                 break;
+            case "version", "ver":
+                VersionCommand.showVersion(sender, plugin);
+                break;
             case "help":
                 sendHelp(sender);
                 break;
@@ -49,6 +52,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
     private void sendHelp(CommandSender sender) {
         sender.sendMessage(ChatColor.GOLD + "========== PluginSpoofer 帮助 ==========");
         sender.sendMessage(ChatColor.YELLOW + "/ps reload" + ChatColor.WHITE + " - 重载配置文件");
+        sender.sendMessage(ChatColor.YELLOW + "/ps version" + ChatColor.WHITE + " - 显示版本信息");
         sender.sendMessage(ChatColor.YELLOW + "/ps help" + ChatColor.WHITE + " - 显示此帮助信息");
     }
     
@@ -61,7 +65,7 @@ public class CommandHandler implements CommandExecutor, TabCompleter {
         List<String> completions = new ArrayList<>();
         
         if (args.length == 1) {
-            List<String> subCommands = List.of("reload", "help");
+            List<String> subCommands = List.of("reload", "version", "ver", "help");
             String input = args[0].toLowerCase();
             
             for (String subCommand : subCommands) {

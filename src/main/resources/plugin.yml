@@ -2,6 +2,7 @@ name: PluginSpoofer
 version: 1.0.1
 main: cn.nekopixel.pluginspoofer.Main
 api-version: 1.20
+authors: [BLxcwg666]
 depend: [packetevents]
 
 commands:

@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class CommandListener implements Listener {
+    private static final String ADMIN_PERMISSION = "pluginspoofer.admin";
+
     private final ConfigManager config;
     private final PluginListSender pluginListSender;
     private final Plugin plugin;
@@ -30,6 +32,15 @@ public class CommandListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String command = extractCommandLabel(event.getMessage());
+
+        if (isInternalPluginCommand(command) && !event.getPlayer().hasPermission(ADMIN_PERMISSION)) {
+            if (config.isDebugEnabled()) {
+                plugin.getLogger().info("[Debug] Unauthorized internal command, rewrite to unknown: " + event.getMessage());
+            }
+
+            rewriteBlockedCommandToUnknown(event, command);
+            return;
+        }
 
         for (String blocked : config.getBlockedCommands()) {
             if (matchesBlockedCommand(command, blocked)) {

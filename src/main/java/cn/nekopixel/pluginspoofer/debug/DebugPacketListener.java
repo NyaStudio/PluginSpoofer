@@ -1,13 +1,17 @@
 package cn.nekopixel.pluginspoofer.debug;
 
 import cn.nekopixel.pluginspoofer.config.ConfigManager;
+import cn.nekopixel.pluginspoofer.utils.UnknownCommandRewriteTracker;
 import com.github.retrooper.packetevents.event.PacketListenerAbstract;
 import com.github.retrooper.packetevents.event.PacketListenerPriority;
 import com.github.retrooper.packetevents.event.PacketReceiveEvent;
+import com.github.retrooper.packetevents.event.PacketSendEvent;
 import com.github.retrooper.packetevents.protocol.packettype.PacketType;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatCommand;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientChatMessage;
 import com.github.retrooper.packetevents.wrapper.play.client.WrapperPlayClientTabComplete;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerSystemChatMessage;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
 import java.util.Locale;
@@ -31,16 +35,8 @@ public class DebugPacketListener extends PacketListenerAbstract {
             
             for (String blocked : config.getBlockedCommands()) {
                 if (matchesBlockedCommand(command, blocked)) {
-                    if (isPluginListCommand(command) && config.isCustomPluginListEnabled()) {
-                        if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("[Debug] Detected pl/plugins command, pass to CommandListener: /" + chatCommand.getCommand());
-                        }
-                        return;
-                    }
-                    
-                    event.setCancelled(true);
                     if (config.isDebugEnabled()) {
-                        plugin.getLogger().info("[Debug] Caught Command: /" + chatCommand.getCommand());
+                        plugin.getLogger().info("[Debug] Blocked command detected, pass to CommandListener: /" + chatCommand.getCommand());
                     }
                     return;
                 }
@@ -60,16 +56,8 @@ public class DebugPacketListener extends PacketListenerAbstract {
                 String command = extractCommandLabel(message);
                 for (String blocked : config.getBlockedCommands()) {
                     if (matchesBlockedCommand(command, blocked)) {
-                        if (isPluginListCommand(command) && config.isCustomPluginListEnabled()) {
-                            if (config.isDebugEnabled()) {
-                                plugin.getLogger().info("[Debug] Detected pl/plugins command, pass to CommandListener: " + chatMessage.getMessage());
-                            }
-                            return;
-                        }
-                        
-                        event.setCancelled(true);
                         if (config.isDebugEnabled()) {
-                            plugin.getLogger().info("[Debug] Caught Command: " + chatMessage.getMessage());
+                            plugin.getLogger().info("[Debug] Blocked command detected, pass to CommandListener: " + chatMessage.getMessage());
                         }
                         return;
                     }
@@ -115,6 +103,32 @@ public class DebugPacketListener extends PacketListenerAbstract {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Override
+    public void onPacketSend(PacketSendEvent event) {
+        if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) {
+            return;
+        }
+
+        Object packetPlayer = event.getPlayer();
+        if (!(packetPlayer instanceof Player player)) {
+            return;
+        }
+
+        WrapperPlayServerSystemChatMessage systemChat = new WrapperPlayServerSystemChatMessage(event);
+        String messageJson = systemChat.getMessageJson();
+        if (messageJson == null || messageJson.isEmpty()) {
+            return;
+        }
+
+        String rewrittenJson = UnknownCommandRewriteTracker.replaceIfTracked(player.getUniqueId(), messageJson);
+        if (!messageJson.equals(rewrittenJson)) {
+            systemChat.setMessageJson(rewrittenJson);
+            if (config.isDebugEnabled()) {
+                plugin.getLogger().info("[Debug] Restore original blocked command label in unknown response for " + player.getName());
             }
         }
     }
@@ -192,18 +206,4 @@ public class DebugPacketListener extends PacketListenerAbstract {
         return false;
     }
 
-    private boolean isPluginListCommand(String command) {
-        if (command.equals("pl") || command.equals("plugins") ||
-            command.equals("bukkit:pl") || command.equals("bukkit:plugins")) {
-            return true;
-        }
-
-        int namespaceIndex = command.indexOf(':');
-        if (namespaceIndex >= 0 && namespaceIndex + 1 < command.length()) {
-            String withoutNamespace = command.substring(namespaceIndex + 1);
-            return withoutNamespace.equals("pl") || withoutNamespace.equals("plugins");
-        }
-
-        return false;
-    }
 }

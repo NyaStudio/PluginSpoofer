@@ -9,6 +9,8 @@ Velocity support is still planned
 ```yml
 debug: false
 modern-server: true  # 伪造高版本服务器特性（1.13+）
+block-slash-completion: true
+block-non-minecraft-namespaces: true
 blocked-commands:
   - "plugins"
   - "pl"

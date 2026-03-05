@@ -1,5 +1,7 @@
 debug: false
 modern-server: true
+block-slash-completion: true
+block-non-minecraft-namespaces: true
 blocked-commands:
   - "plugins"
   - "pl"

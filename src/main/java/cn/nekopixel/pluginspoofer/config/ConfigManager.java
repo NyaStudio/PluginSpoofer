@@ -38,11 +38,11 @@ public class ConfigManager {
     }
     
     public boolean shouldBlockSlashCompletion() {
-        return true;
+        return config.getBoolean("block-slash-completion", true);
     }
     
     public boolean shouldBlockNonMinecraftNamespaces() {
-        return true;
+        return config.getBoolean("block-non-minecraft-namespaces", true);
     }
     
     public boolean isCustomPluginListEnabled() {

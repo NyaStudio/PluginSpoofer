@@ -17,6 +17,7 @@ import org.bukkit.event.server.TabCompleteEvent;
 import org.bukkit.plugin.Plugin;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class CommandListener implements Listener {
     private final ConfigManager config;
@@ -33,12 +34,10 @@ public class CommandListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommand(PlayerCommandPreprocessEvent event) {
-        String command = event.getMessage().toLowerCase();
-        String baseCommand = command.split(" ")[0];
+        String command = extractCommandLabel(event.getMessage());
 
         for (String blocked : config.getBlockedCommands()) {
-            if (baseCommand.equals("/" + blocked.toLowerCase()) || 
-                baseCommand.equals(blocked.toLowerCase())) {
+            if (matchesBlockedCommand(command, blocked)) {
                 
                 if (config.isDebugEnabled()) {
                     plugin.getLogger().info("[Debug] Caught Command: " + event.getMessage());
@@ -46,10 +45,7 @@ public class CommandListener implements Listener {
                 
                 event.setCancelled(true);
                 
-                String cmdName = blocked.toLowerCase();
-                if ((cmdName.equals("pl") || cmdName.equals("plugins") || 
-                     cmdName.equals("bukkit:pl") || cmdName.equals("bukkit:plugins")) 
-                     && config.isCustomPluginListEnabled()) {
+                if (isPluginListCommand(command) && config.isCustomPluginListEnabled()) {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                         pluginListSender.sendCustomPluginList(event.getPlayer());
@@ -77,41 +73,128 @@ public class CommandListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommandSend(PlayerCommandSendEvent event) {
-        event.getCommands().removeIf(cmd -> cmd.contains(":"));
+        if (config.shouldBlockNonMinecraftNamespaces()) {
+            event.getCommands().removeIf(cmd -> cmd.contains(":"));
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onTabComplete(TabCompleteEvent event) {
-        String buffer = event.getBuffer().toLowerCase();
+        String buffer = event.getBuffer() == null ? "" : event.getBuffer();
+        String commandToken = extractCommandLabel(buffer);
+        String normalizedBuffer = buffer.trim().toLowerCase(Locale.ROOT);
 
-        if (buffer.equals("/") && config.shouldBlockSlashCompletion()) {
+        if (normalizedBuffer.equals("/") && config.shouldBlockSlashCompletion()) {
             event.setCompletions(new ArrayList<>());
             return;
         }
 
         for (String blocked : config.getBlockedCommands()) {
-            String blockedLower = blocked.toLowerCase();
-            if (!blockedLower.startsWith("/")) {
-                blockedLower = "/" + blockedLower;
-            }
-            
-            if (buffer.startsWith(blockedLower.substring(0, Math.min(blockedLower.length(), buffer.length())))) {
+            if (isBlockedTabInput(commandToken, blocked)) {
                 event.setCancelled(true);
                 event.setCompletions(new ArrayList<>());
                 return;
             }
         }
         
-        if (config.shouldBlockNonMinecraftNamespaces() && buffer.contains(":") && !event.isCancelled()) {
-            String[] parts = buffer.split(":");
+        if (config.shouldBlockNonMinecraftNamespaces() && commandToken.contains(":") && !event.isCancelled()) {
+            String[] parts = commandToken.split(":", 2);
             if (parts.length > 0) {
-                String namespace = parts[0].replace("/", "");
+                String namespace = parts[0];
                 if (!namespace.equals("minecraft")) {
                     event.setCancelled(true);
                     event.setCompletions(new ArrayList<>());
                 }
             }
         }
+    }
+
+    private String extractCommandLabel(String rawInput) {
+        if (rawInput == null) {
+            return "";
+        }
+
+        String trimmed = rawInput.trim();
+        if (trimmed.startsWith("/")) {
+            trimmed = trimmed.substring(1);
+        }
+
+        int spaceIndex = trimmed.indexOf(' ');
+        if (spaceIndex >= 0) {
+            trimmed = trimmed.substring(0, spaceIndex);
+        }
+
+        return trimmed.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeBlockedCommand(String blockedCommand) {
+        if (blockedCommand == null) {
+            return "";
+        }
+
+        String normalized = blockedCommand.trim().toLowerCase(Locale.ROOT);
+        if (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+
+        return normalized;
+    }
+
+    private boolean matchesBlockedCommand(String command, String blockedCommand) {
+        String normalizedBlocked = normalizeBlockedCommand(blockedCommand);
+        if (command.isEmpty() || normalizedBlocked.isEmpty()) {
+            return false;
+        }
+
+        if (command.equals(normalizedBlocked)) {
+            return true;
+        }
+
+        if (!normalizedBlocked.contains(":")) {
+            int namespaceIndex = command.indexOf(':');
+            if (namespaceIndex >= 0 && namespaceIndex + 1 < command.length()) {
+                String withoutNamespace = command.substring(namespaceIndex + 1);
+                return withoutNamespace.equals(normalizedBlocked);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isBlockedTabInput(String commandToken, String blockedCommand) {
+        String normalizedBlocked = normalizeBlockedCommand(blockedCommand);
+        if (commandToken.isEmpty() || normalizedBlocked.isEmpty()) {
+            return false;
+        }
+
+        if (normalizedBlocked.startsWith(commandToken)) {
+            return true;
+        }
+
+        if (!normalizedBlocked.contains(":")) {
+            int namespaceIndex = commandToken.indexOf(':');
+            if (namespaceIndex >= 0 && namespaceIndex + 1 < commandToken.length()) {
+                String withoutNamespace = commandToken.substring(namespaceIndex + 1);
+                return normalizedBlocked.startsWith(withoutNamespace);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isPluginListCommand(String command) {
+        if (command.equals("pl") || command.equals("plugins") ||
+            command.equals("bukkit:pl") || command.equals("bukkit:plugins")) {
+            return true;
+        }
+
+        int namespaceIndex = command.indexOf(':');
+        if (namespaceIndex >= 0 && namespaceIndex + 1 < command.length()) {
+            String withoutNamespace = command.substring(namespaceIndex + 1);
+            return withoutNamespace.equals("pl") || withoutNamespace.equals("plugins");
+        }
+
+        return false;
     }
     
     private void sendAdventureMessage(Player player, Component message) {

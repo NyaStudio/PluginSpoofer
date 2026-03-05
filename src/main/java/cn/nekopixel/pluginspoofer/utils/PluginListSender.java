@@ -179,13 +179,9 @@ public class PluginListSender {
         if (protocolVersion != null) {
             return protocolVersion < 393;  // 1.13
         }
-        
-        String serverVersion = Bukkit.getVersion();
-        if (serverVersion.contains("1.20") || serverVersion.contains("1.21")) {
-            if (config.isDebugEnabled()) {
-                logger.info("[Debug] High version server detected, using legacy format for safety");
-            }
-            return true;
+
+        if (config.isDebugEnabled()) {
+            logger.info("[Debug] Client protocol unknown for " + player.getName() + ", using modern format by default");
         }
         
         return false;
@@ -240,7 +236,23 @@ public class PluginListSender {
             Object manager = protocolManager.getMethod("getProtocolManager").invoke(null);
             Method getProtocolVersion = manager.getClass().getMethod("getProtocolVersion", Player.class);
             Object version = getProtocolVersion.invoke(manager, player);
-            return (Integer) version.getClass().getMethod("getVersion").invoke(version);
+
+            if (version instanceof Number) {
+                return ((Number) version).intValue();
+            }
+
+            if (version != null) {
+                try {
+                    Object extractedVersion = version.getClass().getMethod("getVersion").invoke(version);
+                    if (extractedVersion instanceof Number) {
+                        return ((Number) extractedVersion).intValue();
+                    }
+                } catch (ReflectiveOperationException ignored) {
+                    return null;
+                }
+            }
+
+            return null;
         } catch (Exception e) {
             return null;
         }

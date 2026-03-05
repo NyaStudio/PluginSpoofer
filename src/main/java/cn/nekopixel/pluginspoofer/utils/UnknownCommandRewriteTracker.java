@@ -1,5 +1,7 @@
 package cn.nekopixel.pluginspoofer.utils;
 
+import net.kyori.adventure.text.event.ClickEvent;
+
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
@@ -12,8 +14,13 @@ public final class UnknownCommandRewriteTracker {
     private static final AtomicLong MARKER_SEQUENCE = new AtomicLong();
     private static final long ENTRY_TTL_MILLIS = 10_000L;
     private static final int MAX_PENDING_PER_PLAYER = 16;
+    private static final boolean RESPONSE_REWRITE_SUPPORTED = detectResponseRewriteSupport();
 
     private UnknownCommandRewriteTracker() {
+    }
+
+    public static boolean isResponseRewriteSupported() {
+        return RESPONSE_REWRITE_SUPPORTED;
     }
 
     public static String register(UUID playerId, String originalCommandLabel) {
@@ -85,6 +92,15 @@ public final class UnknownCommandRewriteTracker {
         }
 
         return normalized.isEmpty() ? "pluginspoofer_blocked" : normalized;
+    }
+
+    private static boolean detectResponseRewriteSupport() {
+        try {
+            ClickEvent.Action.class.getMethod("payloadType");
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 
     private static final class RewriteEntry {

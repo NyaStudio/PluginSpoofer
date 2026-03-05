@@ -109,6 +109,10 @@ public class DebugPacketListener extends PacketListenerAbstract {
 
     @Override
     public void onPacketSend(PacketSendEvent event) {
+        if (!UnknownCommandRewriteTracker.isResponseRewriteSupported()) {
+            return;
+        }
+
         if (event.getPacketType() != PacketType.Play.Server.SYSTEM_CHAT_MESSAGE) {
             return;
         }

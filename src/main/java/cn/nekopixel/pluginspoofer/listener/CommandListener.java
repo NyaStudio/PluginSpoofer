@@ -230,8 +230,14 @@ public class CommandListener implements Listener {
             originalCommandLabel = normalizedCommand;
         }
 
-        String markerCommand = UnknownCommandRewriteTracker.register(event.getPlayer().getUniqueId(), originalCommandLabel);
-        String rewrittenMessage = "/" + markerCommand + extractCommandArguments(event.getMessage());
+        String rewrittenCommandLabel;
+        if (UnknownCommandRewriteTracker.isResponseRewriteSupported()) {
+            rewrittenCommandLabel = UnknownCommandRewriteTracker.register(event.getPlayer().getUniqueId(), originalCommandLabel);
+        } else {
+            rewrittenCommandLabel = buildFallbackUnknownCommandLabel(originalCommandLabel);
+        }
+
+        String rewrittenMessage = "/" + rewrittenCommandLabel + extractCommandArguments(event.getMessage());
         event.setMessage(rewrittenMessage);
 
         if (config.isDebugEnabled()) {
@@ -265,5 +271,17 @@ public class CommandListener implements Listener {
         }
 
         return withoutSlash;
+    }
+
+    private String buildFallbackUnknownCommandLabel(String originalCommandLabel) {
+        if (originalCommandLabel == null || originalCommandLabel.isEmpty()) {
+            return "pluginspoofer_blocked";
+        }
+
+        String sanitized = originalCommandLabel.startsWith("/")
+            ? originalCommandLabel.substring(1)
+            : originalCommandLabel;
+
+        return sanitized + "\u2063";
     }
 }

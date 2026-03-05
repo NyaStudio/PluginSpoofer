@@ -73,9 +73,7 @@ public class CommandListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onCommandSend(PlayerCommandSendEvent event) {
-        if (config.shouldBlockNonMinecraftNamespaces()) {
-            event.getCommands().removeIf(cmd -> cmd.contains(":"));
-        }
+        event.getCommands().removeIf(this::shouldHideFromCommandTree);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -192,6 +190,25 @@ public class CommandListener implements Listener {
         if (namespaceIndex >= 0 && namespaceIndex + 1 < command.length()) {
             String withoutNamespace = command.substring(namespaceIndex + 1);
             return withoutNamespace.equals("pl") || withoutNamespace.equals("plugins");
+        }
+
+        return false;
+    }
+
+    private boolean shouldHideFromCommandTree(String rawCommand) {
+        String command = extractCommandLabel(rawCommand);
+        if (command.isEmpty()) {
+            return false;
+        }
+
+        if (config.shouldBlockNonMinecraftNamespaces() && command.contains(":")) {
+            return true;
+        }
+
+        for (String blocked : config.getBlockedCommands()) {
+            if (matchesBlockedCommand(command, blocked)) {
+                return true;
+            }
         }
 
         return false;

@@ -183,6 +183,14 @@ public class CommandListener implements Listener {
             return false;
         }
 
+        if (isInternalPluginCommand(command)) {
+            return true;
+        }
+
+        if (config.isCustomPluginListEnabled() && isPluginListCommand(command)) {
+            return false;
+        }
+
         if (config.shouldBlockNonMinecraftNamespaces() && command.contains(":")) {
             return true;
         }
@@ -191,6 +199,21 @@ public class CommandListener implements Listener {
             if (matchesBlockedCommand(command, blocked)) {
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private boolean isInternalPluginCommand(String command) {
+        if (command.equals("pluginspoofer") || command.equals("ps") ||
+            command.equals("pluginspoofer:pluginspoofer") || command.equals("pluginspoofer:ps")) {
+            return true;
+        }
+
+        int namespaceIndex = command.indexOf(':');
+        if (namespaceIndex >= 0 && namespaceIndex + 1 < command.length()) {
+            String withoutNamespace = command.substring(namespaceIndex + 1);
+            return withoutNamespace.equals("pluginspoofer") || withoutNamespace.equals("ps");
         }
 
         return false;
